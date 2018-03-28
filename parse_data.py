@@ -25,6 +25,9 @@ parser.add_argument('--checkpoint', type=str, default='./model_old/model.pt',
                     help='model checkpoint to use')
 parser.add_argument('--seed', type=int, default=1111,
                     help='random seed')
+parser.add_argument('--eval_data', type=str, default='../datasets/snli_1.0/snli_1.0_dev.jsonl')
+parser.add_argument('--save_eval_path', type=str, default='../datasets/PRPN_parsed_0328/parsed_snli_dev.jsonl')
+#parser.add_argument('--eval_multinli_matched', type=str, default='../datasets/multinli_1.0/')
 args = parser.parse_args()
 
 def build_tree(depth, sen):
@@ -59,6 +62,10 @@ def MRG(tr):
         s += ') '
         return s
 
+def process_text(text):
+    text = text.replace('(', '').replace(')', '')
+    return text
+
 # Set the random seed manually for reproducibility.
 torch.manual_seed(args.seed)
 
@@ -73,4 +80,40 @@ corpus = data.Corpus(args.data)
 ntokens = len(corpus.dictionary)
 input = Variable(torch.rand(1, 1).mul(ntokens).long(), volatile=True)
 
+f_out = open(args.save_eval_path, 'w')
+with open(args.eval_data) as eval_file:
+    for example_idx, line in enumerate(eval_file):
+        parsed_example = {}
+        example = eval(line)
+        
+        s1_parsed = process_text(data['sentence1_binary_parse'])
+        s2_parsed = process_text(data['sentence2_binary_parse'])
+        sent1 = s1_parsed.strip().split()
+        sent2 = s2_parsed.strip().split()
 
+        x = numpy.array([corpus.dictionary[w.lower()] for w in sent1])
+        input = Variable(torch.LongTensor(x[:, None]))
+
+        hidden = model.init_hidden(1)
+        _, hidden = model(input, hidden)
+        gates = model.gates.squeeze().data.numpy()
+
+        parse_tree = build_tree(gates, sent1)
+        parsed_example['sentence1'] = sent1
+        parsed_example['sent1_tree'] =  MRG(parse_tree)
+
+        x = numpy.array([corpus.dictionary[w.lower()] for w in sent2])
+        input = Variable(torch.LongTensor(x[:, None]))
+
+        hidden = model.init_hidden(1)
+        _, hidden = model(input, hidden)
+        gates = model.gates.squeeze().data.numpy()
+
+        parse_tree = build_tree(gates, sent2)
+        parsed_example['sentence2'] = sent2
+        parsed_example['sent2_tree'] =  MRG(parse_tree)
+        parsed_example['example_id'] = example['pairID']
+        print(parsed_example)
+        json_str = json.dumps(parsed_example) + '\n'
+        f_out.write(json_str)
+f_out.close()
