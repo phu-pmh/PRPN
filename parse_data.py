@@ -21,7 +21,7 @@ parser = argparse.ArgumentParser(description='PyTorch NLI Language Model')
 # Model parameters.
 parser.add_argument('--data', type=str, default='../datasets/nli_data/',
                     help='location of the data corpus')
-parser.add_argument('--checkpoint', type=str, default='./model/model.pt',
+parser.add_argument('--checkpoint', type=str, default='./model_old/model.pt',
                     help='model checkpoint to use')
 parser.add_argument('--seed', type=int, default=1111,
                     help='random seed')
@@ -73,17 +73,4 @@ corpus = data.Corpus(args.data)
 ntokens = len(corpus.dictionary)
 input = Variable(torch.rand(1, 1).mul(ntokens).long(), volatile=True)
 
-while True:
-    sens = raw_input('Input a sentences:')
-    words = sens.strip().split()
-    x = numpy.array([corpus.dictionary[w] for w in words])
-    input = Variable(torch.LongTensor(x[:, None]))
 
-    hidden = model.init_hidden(1)
-    _, hidden = model(input, hidden)
-
-    gates = model.gates.squeeze().data.numpy()
-
-    parse_tree = build_tree(gates, words)
-    print parse_tree
-    print MRG(parse_tree)

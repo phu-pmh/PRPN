@@ -13,7 +13,7 @@ import data
 from model_PRPN import PRPN
 
 parser = argparse.ArgumentParser(description='PennTreeBank PRPN Language Model')
-parser.add_argument('--data', type=str, default='./data/penn',
+parser.add_argument('--data', type=str, default='../datasets/ptb_data',
                     help='location of the data corpus')
 parser.add_argument('--emsize', type=int, default=800,
                     help='size of word embeddings')
