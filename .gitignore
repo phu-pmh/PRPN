@@ -12,6 +12,7 @@ out_*.log
 *.pyc
 model*/
 sb_*.sbatch
+process_input.py
 
 # Distribution / packaging
 .Python
